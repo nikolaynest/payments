@@ -20,7 +20,7 @@ public class Payment {
     @GeneratedValue
     private UUID id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, name = "external_id")
     private String externalId; // idempotency key
 
     @Column(nullable = false)
@@ -30,7 +30,7 @@ public class Payment {
     @Column(nullable = false)
     private PaymentStatus status;
 
-    @Column(nullable = false)
+    @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
 
     protected Payment () {}
