@@ -41,4 +41,24 @@ public class Payment {
         this.status = PaymentStatus.PENDING;
         this.createdAt = OffsetDateTime.now();
     }
+
+    public UUID getId() {
+        return id;
+    }
+
+    public String getExternalId() {
+        return externalId;
+    }
+
+    public BigDecimal getAmount() {
+        return amount;
+    }
+
+    public PaymentStatus getStatus() {
+        return status;
+    }
+
+    public OffsetDateTime getCreatedAt() {
+        return createdAt;
+    }
 }
