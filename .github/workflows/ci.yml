@@ -19,8 +19,6 @@ jobs:
           POSTGRES_USER: dummyuser
           POSTGRES_PASSWORD: dummypassword
           POSTGRES_DB: dummyname
-        ports:
-          - 5432:5432
         options: >-
           --health-cmd "pg_isready -U postgres"
           --health-interval 10s
