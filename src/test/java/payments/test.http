@@ -4,7 +4,7 @@ Content-Type: application/json
 
 {
   "amount": 100.50,
-  "externalId": "my-test-23"
+  "externalId": "my-test-123"
 }
 
 ###

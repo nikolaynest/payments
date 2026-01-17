@@ -54,11 +54,42 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven
 
-      - name: Build and run tests
-        run: mvn clean test
+      - name: Compile
+        run: mvn clean compile
 
-      - name: Package application
+      - name: Run Tests
+        run: mvn test
+
+      - name: Package
         run: mvn package -DskipTests
+
+      - name: Set up Docker Compose
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build and start containers
+        run: |
+          docker compose up --build -d
+
+      - name: Wait for Postgres
+        run: |
+          echo "Waiting for Postgres..."
+          until docker exec dev-postgres pg_isready -U payments; 
+          do sleep 2
+          done
+
+      - name: Wait for Spring Boot Service
+        run: |
+          echo "Waiting for Payments Service to start..."
+          until curl -s http://localhost:8080/actuator/health | grep UP; 
+          do sleep 2
+          done
+
+      - name: Run integration Tests
+        run: mvn verify
+
+      - name: Tear down containers
+        run: docker compose down -v
+        
 
 #  docker-build-and-push:
 #    needs: build-and-test
