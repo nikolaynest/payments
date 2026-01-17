@@ -68,6 +68,7 @@ jobs:
 
       - name: Build and start containers
         run: |
+          docker compose down -v || true
           docker compose up --build -d
 
       - name: Wait for Postgres
