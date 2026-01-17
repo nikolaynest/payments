@@ -1,0 +1,15 @@
+#
+POST http://localhost:8080/payments
+Content-Type: application/json
+
+{
+  "amount": 100.50,
+  "externalId": "my-test-23"
+}
+
+###
+
+GET http://localhost:8080/payments/my-test-123
+Accept: application/json
+
+###
