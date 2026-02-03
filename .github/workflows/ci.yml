@@ -18,11 +18,9 @@ jobs:
         env:
           POSTGRES_USER: dummyuser
           POSTGRES_PASSWORD: dummypassword
-          POSTGRES_DB: dummyname
-        ports:
-          - 5432:5432
+          POSTGRES_DB: dummydb
         options: >-
-          --health-cmd "pg_isready -U postgres"
+          --health-cmd "pg_isready -U dummyuser -d dummydb"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
@@ -31,34 +29,69 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Set environment variables from Secrets
+      - name: Set environment variables
         run: |
           echo "DB_USER=${{ secrets.POSTGRES_USER }}" >> $GITHUB_ENV
           echo "DB_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> $GITHUB_ENV
           echo "DB_NAME=${{ secrets.POSTGRES_DB }}" >> $GITHUB_ENV
-          echo "DB_HOST=localhost" >> $GITHUB_ENV
+          echo "DB_HOST=db" >> $GITHUB_ENV
           echo "DB_PORT=5432" >> $GITHUB_ENV
 
       - name: Set up Java 21
         uses: actions/setup-java@v3
         with:
-          distribution: 'temurin'
-          java-version: '21'
+          distribution: temurin
+          java-version: 21
 
       - name: Cache Maven dependencies
         uses: actions/cache@v3
         with:
-          path: |
-            ~/.m2/repository
+          path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ runner.os }}-maven
 
-      - name: Build and run tests
-        run: mvn clean test
+      - name: Compile
+        run: mvn clean compile
+
+      - name: Run unit tests
+        run: mvn test
 
       - name: Package application
         run: mvn package -DskipTests
+
+      - name: Set up Docker Compose
+        uses: docker/setup-buildx-action@v2
+
+      - name: Show environment variables
+        run: |
+          echo "DB_USER=${{ secrets.POSTGRES_USER }}" >> $GITHUB_ENV
+          echo "DB_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}" >> $GITHUB_ENV
+          echo "DB_NAME=${{ secrets.POSTGRES_DB }}" >> $GITHUB_ENV
+          echo "DB_HOST=db" >> $GITHUB_ENV
+          echo "DB_PORT=5432" >> $GITHUB_ENV
+
+      - name: Build and start containers
+        run: |
+          docker compose down -v || true
+          docker compose up --build -d
+
+      - name: Wait for Postgres
+        run: |
+          echo "Waiting for Postgres..."
+          until pg_isready -h db -U ${{ secrets.POSTGRES_USER }} -d ${{ secrets.POSTGRES_DB }}; do sleep 2; done
+
+      - name: Wait for Spring Boot Service
+        run: |
+          echo "Waiting for Payments Service..."
+          timeout 60 bash -c 'until curl -s http://localhost:8080/actuator/health | grep UP; do sleep 2; done'
+
+      - name: Run integration tests
+        run: mvn verify
+
+      - name: Tear down containers
+        run: docker compose down -v
+
 
 #  docker-build-and-push:
 #    needs: build-and-test
